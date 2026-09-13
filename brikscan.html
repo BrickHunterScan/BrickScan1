@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>BrikScan</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#D8171B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brick-red:#D8171B;
+    --brick-yellow:#FFCC00;
+    --brick-blue:#0A5FB4;
+    --ink:#181614;
+    --paper:#F4EFE6;
+    --card:#FFFFFF;
+    --line:#E3DACB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 8px 8px, rgba(24,22,20,0.05) 2px, transparent 2px);
+    background-size:28px 28px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:var(--paper);
+    display:flex;
+    flex-direction:column;
+  }
+  header{
+    padding:28px 22px 18px;
+    border-bottom:4px solid var(--ink);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .api-key-btn{
+    margin-left:auto;
+    background:none;
+    border:2px solid var(--ink);
+    border-radius:10px;
+    width:36px; height:36px;
+    font-size:16px;
+    cursor:pointer;
+  }
+  .stud{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--brick-red);
+    border:3px solid var(--ink);
+  }
+  h1{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.5px;
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:14px;
+    color:#514c44;
+    line-height:1.5;
+    max-width:34ch;
+  }
+  main{
+    flex:1;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  .scan-zone{
+    border:3px dashed var(--ink);
+    border-radius:18px;
+    background:var(--card);
+    padding:26px 20px;
+    text-align:center;
+    position:relative;
+  }
+  .scan-zone.has-image{
+    padding:0;
+    overflow:hidden;
+    border-style:solid;
+  }
+  .scan-zone img{
+    display:block;
+    width:100%;
+    max-height:340px;
+    object-fit:cover;
+  }
+  .corner{
+    position:absolute;
+    width:20px;height:20px;
+    border-color:var(--brick-red);
+    border-style:solid;
+    border-width:0;
+  }
+  .scan-zone:not(.has-image) .corner{display:block;}
+  .c-tl{top:10px;left:10px;border-top-width:4px;border-left-width:4px;border-radius:6px 0 0 0;}
+  .c-tr{top:10px;right:10px;border-top-width:4px;border-right-width:4px;border-radius:0 6px 0 0;}
+  .c-bl{bottom:10px;left:10px;border-bottom-width:4px;border-left-width:4px;border-radius:0 0 0 6px;}
+  .c-br{bottom:10px;right:10px;border-bottom-width:4px;border-right-width:4px;border-radius:0 0 6px 0;}
+
+  .scan-icon{font-size:40px;margin-bottom:10px;}
+  .scan-label{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:17px;
+  }
+  .scan-sub{
+    font-size:13px;
+    color:#78706363;
+    color:#6b6459;
+    margin-top:4px;
+  }
+
+  input[type=file]{display:none;}
+
+  .btn{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    border:3px solid var(--ink);
+    border-radius:12px;
+    padding:14px 20px;
+    cursor:pointer;
+    text-align:center;
+    box-shadow:4px 4px 0 var(--ink);
+    transition:transform .08s ease, box-shadow .08s ease;
+    background:var(--brick-yellow);
+    color:var(--ink);
+  }
+  .btn:active{
+    transform:translate(4px,4px);
+    box-shadow:0 0 0 var(--ink);
+  }
+  .btn.primary{background:var(--brick-red); color:#fff;}
+  .btn.ghost{background:var(--card);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .btn-row{display:flex; gap:12px;}
+  .btn-row .btn{flex:1;}
+
+  .status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    color:#514c44;
+    padding:4px 2px;
+  }
+  .spinner{
+    width:16px;height:16px;
+    border:3px solid var(--line);
+    border-top-color:var(--brick-red);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    flex-shrink:0;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .result{
+    background:var(--card);
+    border:3px solid var(--ink);
+    border-radius:18px;
+    padding:20px;
+    box-shadow:6px 6px 0 var(--ink);
+  }
+  .type-badge{
+    display:inline-block;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:20px;
+    padding:4px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .result-name{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:20px;
+    margin:0 0 2px;
+  }
+  .result-num{
+    font-size:13px;
+    color:#78706b;
+    margin-bottom:14px;
+  }
+  .stars{
+    display:flex;
+    gap:4px;
+    margin-bottom:16px;
+  }
+  .star{font-size:22px; color:var(--line);}
+  .star.filled{color:var(--brick-yellow); text-shadow:0 0 0 var(--ink); -webkit-text-stroke:1.5px var(--ink);}
+
+  .price-row{
+    display:flex;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .price-box{
+    flex:1;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  .price-box .label{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#78706b;}
+  .price-box .value{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; margin-top:2px;}
+  .price-box.accent{background:var(--brick-red); border-color:var(--ink);}
+  .price-box.accent .label{color:#ffd7d7;}
+  .price-box.accent .value{color:#fff;}
+
+  .note{
+    font-size:13px;
+    line-height:1.55;
+    color:#3a3630;
+    border-top:2px dashed var(--line);
+    padding-top:12px;
+  }
+
+  .disclaimer{
+    font-size:11.5px;
+    color:#948c7f;
+    text-align:center;
+    margin-top:auto;
+    padding:18px 22px 26px;
+    line-height:1.5;
+  }
+
+  .benefice-zone{
+    border-top:2px dashed var(--line);
+    padding-top:14px;
+    margin-top:16px;
+  }
+  .benefice-label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .benefice-row{
+    display:flex;
+    gap:10px;
+  }
+  .benefice-row input{
+    flex:1;
+    border:2px solid var(--ink);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+    min-width:0;
+  }
+  .benefice-row input:focus{outline:none; border-color:var(--brick-red);}
+  .benefice-erreur{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--brick-red);
+  }
+  .benefice-carte{
+    margin-top:12px;
+    border-radius:12px;
+    padding:14px;
+    border:2px solid var(--ink);
+  }
+  .benefice-carte.positif{background:#EAF7EA;}
+  .benefice-carte.negatif{background:#FFF1EF;}
+  .benefice-ligne{
+    display:flex;
+    justify-content:space-between;
+    font-size:13.5px;
+    margin-bottom:6px;
+    color:#514c44;
+  }
+  .benefice-total{
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid rgba(0,0,0,0.12);
+    font-size:14.5px;
+    font-family:'Baloo 2',sans-serif;
+  }
+
+  .error{
+    background:#FFF1EF;
+    border:2px solid var(--brick-red);
+    color:#7a1210;
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:13.5px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="stud"></div>
+      <h1>BrikScan</h1>
+      <button id="apiKeyBtn" class="api-key-btn" title="Configurer la clé API">⚙️</button>
+    </div>
+    <p>Prends une photo d'un set LEGO et laisse l'IA l'identifier, estimer sa valeur et sa rareté.</p>
+  </header>
+
+  <main>
+    <div class="scan-zone" id="scanZone">
+      <div class="corner c-tl"></div>
+      <div class="corner c-tr"></div>
+      <div class="corner c-bl"></div>
+      <div class="corner c-br"></div>
+      <div id="placeholder">
+        <div class="scan-icon">🧱</div>
+        <div class="scan-label">Aucune photo pour l'instant</div>
+        <div class="scan-sub">Prends une photo nette du set, de face si possible</div>
+      </div>
+      <img id="preview" style="display:none;">
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
+
+    <div class="btn-row">
+      <button class="btn primary" id="captureBtn">📷 Prendre une photo</button>
+    </div>
+
+    <button class="btn ghost" id="scanBtn" disabled>🔍 Identifier ce LEGO</button>
+
+    <div id="statusZone"></div>
+    <div id="resultZone"></div>
+  </main>
+
+  <div class="disclaimer">
+    Les estimations viennent d'une IA générale (Gemini), pas d'une base de prix vérifiée (BrickLink/Rebrickable) — à utiliser comme point de départ, pas comme vérité absolue. Ta clé API est stockée uniquement sur cet appareil, jamais envoyée ailleurs qu'à Google. Appuie sur ⚙️ pour la configurer.
+  </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const captureBtn = document.getElementById('captureBtn');
+const scanBtn = document.getElementById('scanBtn');
+const scanZone = document.getElementById('scanZone');
+const placeholder = document.getElementById('placeholder');
+const preview = document.getElementById('preview');
+const statusZone = document.getElementById('statusZone');
+const resultZone = document.getElementById('resultZone');
+
+let currentBase64 = null;
+let currentMediaType = null;
+
+captureBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    currentBase64 = dataUrl.split(',')[1];
+    currentMediaType = file.type || 'image/jpeg';
+
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+    scanZone.classList.add('has-image');
+    scanBtn.disabled = false;
+    resultZone.innerHTML = '';
+    statusZone.innerHTML = '';
+  };
+  reader.readAsDataURL(file);
+});
+
+scanBtn.addEventListener('click', async () => {
+  if (!currentBase64) return;
+
+  scanBtn.disabled = true;
+  captureBtn.disabled = true;
+  resultZone.innerHTML = '';
+  statusZone.innerHTML = `<div class="status"><div class="spinner"></div>Analyse de la photo en cours…</div>`;
+
+  const prompt = `Tu es un expert LEGO. Regarde cette photo et identifie ce qu'elle montre : ça peut être un set complet (boîte ou assemblé), une figurine LEGO seule (minifig), ou des pièces en vrac.
+
+Réponds UNIQUEMENT avec un objet JSON, sans aucun texte avant ou après, sans balises markdown, au format exact suivant :
+{
+  "type": "set complet" OU "figurine seule" OU "pièces en vrac",
+  "nom": "nom du set/de la figurine, ou description si non identifiable",
+  "numero": "numéro du set (ou référence de figurine si connue), sinon 'Inconnu'",
+  "prix_neuf_estime": "fourchette de prix neuf en euros, ex: '45-55€', ou 'Inconnu' si tu ne sais pas",
+  "prix_occasion_estime": "fourchette de prix d'occasion/revente en euros, ex: '25-35€'",
+  "rarete": un nombre entier de 1 à 5 (1 = très courant/facile à trouver, 5 = très rare/recherché),
+  "raison_rarete": "une phrase courte expliquant pourquoi cette note de rareté",
+  "note": "une phrase courte sur ce que tu observes (état, confiance dans l'identification, etc.)"
+}
+
+Si c'est une figurine seule : identifie le personnage, le thème (Marvel, Star Wars, City...), et si possible le set d'origine dont elle provient — les figurines exclusives à un set retiré du commerce valent souvent plus cher que le set lui-même une fois séparées.
+
+Si tu n'arrives pas à identifier précisément, fais ton meilleur effort et indique-le clairement dans le champ "note". Ne mets jamais numero à une valeur inventée si tu n'es pas sûr — utilise "Inconnu" dans ce cas.`;
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      statusZone.innerHTML = '';
+      scanBtn.disabled = false;
+      captureBtn.disabled = false;
+      ouvrirParametresCle();
+      return;
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: currentMediaType, data: currentBase64 } }
+              ]
+            }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || "Erreur API Gemini");
+    }
+
+    const textBlock = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textBlock) throw new Error("Réponse vide");
+
+    let clean = textBlock.trim();
+    clean = clean.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(clean);
+
+    statusZone.innerHTML = '';
+    renderResult(result);
+
+  } catch (err) {
+    statusZone.innerHTML = `<div class="error">Impossible d'analyser cette photo : ${escapeHtml(err.message || 'erreur inconnue')}. Vérifie ta clé API ou réessaie avec une image plus nette.</div>`;
+    console.error(err);
+  } finally {
+    scanBtn.disabled = false;
+    captureBtn.disabled = false;
+  }
+});
+
+// ===== GESTION DE LA CLÉ API (stockée uniquement sur ton appareil) =====
+function getApiKey() {
+  return localStorage.getItem('brikscan_gemini_key') || '';
+}
+
+function setApiKey(key) {
+  localStorage.setItem('brikscan_gemini_key', key.trim());
+}
+
+function ouvrirParametresCle() {
+  const cleActuelle = getApiKey();
+  const nouvelleCle = prompt(
+    "Colle ta clé API Gemini (gratuite, obtenue sur aistudio.google.com) :",
+    cleActuelle
+  );
+  if (nouvelleCle !== null && nouvelleCle.trim() !== '') {
+    setApiKey(nouvelleCle);
+  }
+}
+
+document.getElementById('apiKeyBtn').addEventListener('click', ouvrirParametresCle);
+
+function renderResult(r) {
+  const rarete = Math.max(1, Math.min(5, parseInt(r.rarete) || 1));
+  let starsHtml = '';
+  for (let i = 1; i <= 5; i++) {
+    starsHtml += `<span class="star ${i <= rarete ? 'filled' : ''}">★</span>`;
+  }
+
+  const typeIcones = { "set complet": "📦", "figurine seule": "🧍", "pièces en vrac": "🧱" };
+  const typeLabel = r.type || "Type inconnu";
+  const typeIcone = typeIcones[r.type] || "🔎";
+
+  resultZone.innerHTML = `
+    <div class="result">
+      <div class="type-badge">${typeIcone} ${escapeHtml(typeLabel)}</div>
+      <div class="result-name">${escapeHtml(r.nom || 'Set non identifié')}</div>
+      <div class="result-num">Réf. ${escapeHtml(r.numero || 'Inconnu')}</div>
+      <div class="stars">${starsHtml}</div>
+      <div class="price-row">
+        <div class="price-box">
+          <div class="label">Prix neuf</div>
+          <div class="value">${escapeHtml(r.prix_neuf_estime || '?')}</div>
+        </div>
+        <div class="price-box accent">
+          <div class="label">Occasion</div>
+          <div class="value">${escapeHtml(r.prix_occasion_estime || '?')}</div>
+        </div>
+      </div>
+      <div class="note"><strong>Rareté :</strong> ${escapeHtml(r.raison_rarete || '')}<br><br>${escapeHtml(r.note || '')}</div>
+      <div class="benefice-zone">
+        <label class="benefice-label" for="prixAchat">Tu comptes l'acheter combien ?</label>
+        <div class="benefice-row">
+          <input type="number" id="prixAchat" placeholder="Ex: 15" step="0.01" min="0">
+          <button class="btn primary" id="calculerBtn" style="padding:12px 18px; font-size:14px;">Calculer</button>
+        </div>
+        <div id="beneficeResultat"></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('calculerBtn').addEventListener('click', () => calculerBenefice(r.prix_occasion_estime));
+  document.getElementById('prixAchat').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') calculerBenefice(r.prix_occasion_estime);
+  });
+}
+
+function calculerBenefice(fourchetteOccasion) {
+  const prixAchatInput = document.getElementById('prixAchat');
+  const zone = document.getElementById('beneficeResultat');
+  const prixAchat = parseFloat(prixAchatInput.value);
+
+  if (isNaN(prixAchat) || prixAchat <= 0) {
+    zone.innerHTML = `<div class="benefice-erreur">Entre un prix valide.</div>`;
+    return;
+  }
+
+  // Extrait les nombres de la fourchette (ex: "25-35€" -> [25, 35]) pour en faire une moyenne
+  const nombres = (fourchetteOccasion || '').match(/\d+([.,]\d+)?/g);
+  if (!nombres || nombres.length === 0) {
+    zone.innerHTML = `<div class="benefice-erreur">Valeur de revente inconnue, impossible de calculer.</div>`;
+    return;
+  }
+
+  const valeurs = nombres.map(n => parseFloat(n.replace(',', '.')));
+  const moyenneRevente = valeurs.reduce((a, b) => a + b, 0) / valeurs.length;
+
+  const benefice = moyenneRevente - prixAchat;
+  const margePct = prixAchat > 0 ? Math.round((benefice / prixAchat) * 100) : 0;
+  const positif = benefice >= 0;
+
+  zone.innerHTML = `
+    <div class="benefice-carte ${positif ? 'positif' : 'negatif'}">
+      <div class="benefice-ligne">
+        <span>Revente estimée (moyenne)</span>
+        <strong>${moyenneRevente.toFixed(2)}€</strong>
+      </div>
+      <div class="benefice-ligne">
+        <span>Coût</span>
+        <strong>${prixAchat.toFixed(2)}€</strong>
+      </div>
+      <div class="benefice-total">
+        ${positif ? '✅' : '⚠️'} ${positif ? 'Bénéfice' : 'Perte'} estimé : <strong>${benefice >= 0 ? '+' : ''}${benefice.toFixed(2)}€ (${margePct}%)</strong>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW non enregistré:', err));
+  });
+}
+</script>
+</body>
+</html>
